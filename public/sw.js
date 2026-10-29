@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pw-gyansarthi-v2';
+const CACHE_NAME = 'pw-gyansarthi-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -40,12 +40,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Navigation request fallback
+  // Network-first for navigation so updates take effect immediately
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/index.html');
-      })
+      fetch(event.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy));
+          return res;
+        })
+        .catch(() => caches.match('/index.html'))
     );
     return;
   }

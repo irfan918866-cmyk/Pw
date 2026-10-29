@@ -484,6 +484,9 @@ private fun ArolinksVerifierWebView(
                         mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                         userAgentString =
                             "Mozilla/5.0 (Linux; Android 14; Pixel 7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36"
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            safeBrowsingEnabled = false
+                        }
                     }
 
                     val cookieManager = CookieManager.getInstance()
@@ -525,6 +528,19 @@ private fun ArolinksVerifierWebView(
                             if (url != null && ArolinksVerificationManager.verifyCallbackUrlIfMatch(ctx, url)) {
                                 onVerified()
                             }
+                        }
+
+                        override fun onRenderProcessGone(
+                            view: WebView?,
+                            detail: android.webkit.RenderProcessGoneDetail?
+                        ): Boolean {
+                            view?.let {
+                                (it.parent as? ViewGroup)?.removeView(it)
+                                it.destroy()
+                            }
+                            webViewRef = null
+                            onCancel()
+                            return true
                         }
                     }
 

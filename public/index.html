@@ -43,8 +43,7 @@
 
     body, html {
       width: 100%;
-      height: 100%;
-      overflow: hidden;
+      min-height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background-color: var(--bg-dark);
       color: var(--text-dark);
@@ -54,18 +53,6 @@
     body.light-mode {
       background-color: var(--bg-light);
       color: var(--text-light);
-    }
-
-    #app-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
     }
 
     /* Top Progress Bar */
@@ -81,61 +68,50 @@
       opacity: 0;
     }
 
-    /* Fullscreen Webview Frame */
-    #portal-frame {
+    /* Full Screen Overlay Containers */
+    .screen-overlay {
+      min-height: 100vh;
       width: 100%;
-      height: 100%;
-      border: none;
-      flex: 1;
-      background-color: inherit;
-    }
-
-    /* 24-Hour Arolinks Verification Lock Screen */
-    #verification-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 5000;
       background: radial-gradient(circle at top, #1E1B4B 0%, #0F1117 70%);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
-      overflow-y: auto;
+      padding: 24px 18px 96px;
     }
 
-    body.light-mode #verification-overlay {
+    body.light-mode .screen-overlay {
       background: radial-gradient(circle at top, #EEF2FF 0%, #F8FAFC 70%);
     }
 
-    #verification-overlay.hidden {
+    .hidden {
       display: none !important;
     }
 
-    .verify-card {
+    .portal-card {
       width: 100%;
-      max-width: 420px;
-      background: rgba(24, 28, 38, 0.92);
+      max-width: 430px;
+      background: rgba(24, 28, 38, 0.94);
       backdrop-filter: blur(16px);
-      border: 1px solid rgba(99, 102, 241, 0.3);
+      border: 1px solid rgba(99, 102, 241, 0.32);
       border-radius: 24px;
-      padding: 32px 24px;
+      padding: 30px 22px;
       text-align: center;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-      animation: cardFadeIn 0.35s ease-out;
+      animation: cardFadeIn 0.3s ease-out;
     }
 
-    body.light-mode .verify-card {
-      background: rgba(255, 255, 255, 0.95);
+    body.light-mode .portal-card {
+      background: rgba(255, 255, 255, 0.96);
       border: 1px solid rgba(99, 102, 241, 0.25);
       box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.12);
     }
 
     @keyframes cardFadeIn {
-      from { opacity: 0; transform: translateY(14px) scale(0.98); }
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    .verify-logo-wrap {
+    .logo-ring {
       width: 76px;
       height: 76px;
       margin: 0 auto 16px;
@@ -148,7 +124,12 @@
       box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
     }
 
-    .verify-logo-wrap img {
+    .logo-ring.unlocked-ring {
+      background: linear-gradient(135deg, #10B981, #6366F1);
+      box-shadow: 0 8px 22px rgba(16, 185, 129, 0.38);
+    }
+
+    .logo-ring img {
       width: 100%;
       height: 100%;
       border-radius: 50%;
@@ -160,7 +141,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 5px 12px;
+      padding: 5px 13px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 700;
@@ -168,7 +149,7 @@
       text-transform: uppercase;
       background: rgba(239, 68, 68, 0.15);
       color: #F87171;
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      border: 1px solid rgba(239, 68, 68, 0.32);
       margin-bottom: 14px;
     }
 
@@ -177,21 +158,32 @@
       color: #DC2626;
     }
 
-    .verify-title {
+    .status-pill.unlocked-pill {
+      background: rgba(16, 185, 129, 0.16);
+      color: #34D399;
+      border-color: rgba(16, 185, 129, 0.38);
+    }
+
+    body.light-mode .status-pill.unlocked-pill {
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+    }
+
+    .portal-title {
       font-size: 22px;
       font-weight: 800;
       margin-bottom: 8px;
       letter-spacing: -0.3px;
     }
 
-    .verify-subtitle {
+    .portal-subtitle {
       font-size: 14px;
       line-height: 1.5;
       color: var(--muted-dark);
       margin-bottom: 22px;
     }
 
-    body.light-mode .verify-subtitle {
+    body.light-mode .portal-subtitle {
       color: var(--muted-light);
     }
 
@@ -201,7 +193,7 @@
       border-radius: 16px;
       padding: 16px;
       text-align: left;
-      margin-bottom: 24px;
+      margin-bottom: 22px;
     }
 
     body.light-mode .steps-box {
@@ -245,7 +237,7 @@
       color: #4F46E5;
     }
 
-    .verify-btn {
+    .primary-btn {
       width: 100%;
       padding: 15px 20px;
       border: none;
@@ -259,21 +251,95 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
+      text-decoration: none;
       box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.55);
       transition: transform 0.2s ease, opacity 0.2s ease;
     }
 
-    .verify-btn:hover {
+    .primary-btn.emerald-btn {
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.5);
+    }
+
+    .primary-btn:hover {
       opacity: 0.96;
     }
 
-    .verify-btn:active {
+    .primary-btn:active {
       transform: scale(0.98);
     }
 
-    .verify-btn:disabled {
+    .primary-btn:disabled {
       opacity: 0.65;
       cursor: wait;
+    }
+
+    /* Quick Links Grid in Unlocked Hub */
+    .quick-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .quick-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 14px 10px;
+      border-radius: 14px;
+      background: rgba(15, 17, 23, 0.65);
+      border: 1px solid var(--border-dark);
+      color: inherit;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    body.light-mode .quick-card {
+      background: #F1F5F9;
+      border-color: var(--border-light);
+    }
+
+    .quick-card:active {
+      transform: scale(0.97);
+    }
+
+    .quick-card span.q-icon {
+      font-size: 20px;
+    }
+
+    .auto-launch-box {
+      margin-top: 16px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.28);
+      font-size: 12.5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .cancel-auto-btn {
+      background: rgba(255, 255, 255, 0.12);
+      color: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    body.light-mode .cancel-auto-btn {
+      background: rgba(15, 23, 42, 0.08);
+      border-color: rgba(15, 23, 42, 0.15);
     }
 
     #verify-error-msg {
@@ -283,10 +349,14 @@
       display: none;
     }
 
-    .verify-footer-note {
+    .footer-note {
       margin-top: 16px;
       font-size: 11.5px;
       color: var(--muted-dark);
+    }
+
+    body.light-mode .footer-note {
+      color: var(--muted-light);
     }
 
     /* Active 24h Timer Pill (Bottom Left) */
@@ -295,25 +365,25 @@
       bottom: 24px;
       left: 16px;
       z-index: 999;
-      background: rgba(24, 28, 38, 0.88);
+      background: rgba(24, 28, 38, 0.92);
       backdrop-filter: blur(8px);
-      border: 1px solid rgba(16, 185, 129, 0.35);
+      border: 1px solid rgba(16, 185, 129, 0.4);
       color: #ECFDF5;
-      padding: 7px 13px;
+      padding: 8px 14px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 700;
       display: none;
       align-items: center;
-      gap: 6px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+      gap: 7px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
       user-select: none;
     }
 
     body.light-mode #timer-badge {
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.95);
       color: #065F46;
-      border-color: rgba(16, 185, 129, 0.4);
+      border-color: rgba(16, 185, 129, 0.45);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
@@ -352,7 +422,6 @@
       transform: scale(0.92);
     }
 
-    /* Theme Toggle Button (Bottom Right) */
     #theme-btn {
       bottom: 24px;
       right: 20px;
@@ -379,6 +448,7 @@
       opacity: 0;
       pointer-events: none;
       transition: all 0.3s ease;
+      white-space: nowrap;
     }
 
     #toast-banner.show {
@@ -465,10 +535,10 @@
   <div id="offline-banner">⚠️ You are offline. Check connection.</div>
   <div id="toast-banner">✅ Verification Complete! Unlocked for 24 Hours.</div>
 
-  <!-- 24-Hour Arolinks Verification Gate -->
-  <div id="verification-overlay">
-    <div class="verify-card">
-      <div class="verify-logo-wrap">
+  <!-- 1. LOCKED VIEW: 24-Hour Arolinks Verification Gate -->
+  <div id="verification-overlay" class="screen-overlay">
+    <div class="portal-card">
+      <div class="logo-ring">
         <img src="/icons/icon-192.png" alt="PW GyanSarthi" />
       </div>
 
@@ -476,8 +546,8 @@
         <span>🔒 Verification Required</span>
       </div>
 
-      <h1 class="verify-title">PW GyanSarthi Access</h1>
-      <p class="verify-subtitle">
+      <h1 class="portal-title">PW GyanSarthi Access</h1>
+      <p class="portal-subtitle">
         Complete a quick 1-step verification to unlock all Study Batches, Lectures &amp; Notes for <strong>24 Hours</strong> on your phone.
       </p>
 
@@ -496,29 +566,62 @@
         </div>
       </div>
 
-      <button class="verify-btn" id="verify-now-btn">
+      <button class="primary-btn" id="verify-now-btn">
         <span id="verify-btn-text">🔓 Verify Now — Unlock 24 Hours</span>
       </button>
 
       <div id="verify-error-msg"></div>
 
-      <p class="verify-footer-note">
+      <p class="footer-note">
         Access automatically renews for 24 hours after each verification.
       </p>
     </div>
   </div>
 
-  <!-- Main Study Portal Container -->
-  <div id="app-container">
-    <iframe 
-      id="portal-frame" 
-      src="about:blank" 
-      title="PW GyanSarthi Batches"
-      allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture"
-    ></iframe>
+  <!-- 2. UNLOCKED VIEW: 24-Hour Active Study Batches Launcher (No Iframe Block) -->
+  <div id="unlocked-overlay" class="screen-overlay hidden">
+    <div class="portal-card">
+      <div class="logo-ring unlocked-ring">
+        <img src="/icons/icon-192.png" alt="PW GyanSarthi" />
+      </div>
+
+      <div class="status-pill unlocked-pill">
+        <span class="pulse-dot"></span>
+        <span id="unlocked-pill-timer">24h 00m Remaining</span>
+      </div>
+
+      <h1 class="portal-title">PW GyanSarthi Unlocked</h1>
+      <p class="portal-subtitle">
+        Your 24-hour verification is active! Tap below or wait a moment to open your Study Batches in full screen.
+      </p>
+
+      <a href="https://pw.deltaverse.site/study/batches" class="primary-btn emerald-btn" id="launch-batches-btn">
+        <span>🚀 Open Study Batches Now</span>
+      </a>
+
+      <div class="auto-launch-box" id="auto-launch-box">
+        <span id="auto-launch-text">⏳ Opening Study Batches automatically...</span>
+        <button type="button" class="cancel-auto-btn" id="cancel-auto-btn">Stay Here</button>
+      </div>
+
+      <div class="quick-grid">
+        <a href="https://pw.deltaverse.site/study/batches" class="quick-card">
+          <span class="q-icon">📚</span>
+          <span>All Batches</span>
+        </a>
+        <a href="https://pw.deltaverse.site/study" class="quick-card">
+          <span class="q-icon">🎯</span>
+          <span>My Study</span>
+        </a>
+      </div>
+
+      <p class="footer-note">
+        After 24 hours, you will be asked to verify again when opening the app.
+      </p>
+    </div>
   </div>
 
-  <!-- Active 24h Countdown Badge -->
+  <!-- Active 24h Countdown Badge (Bottom Left) -->
   <div id="timer-badge" title="24-Hour Verification Active">
     <span class="pulse-dot"></span>
     <span id="timer-text">24h 00m left</span>
@@ -539,22 +642,33 @@
 
   <script>
     // =========================================================================
-    // 1. 24-HOUR AROLINKS VERIFICATION SYSTEM
+    // 1. 24-HOUR AROLINKS VERIFICATION & FULL-SCREEN PORTAL LAUNCHER
     // =========================================================================
     const PORTAL_URL = 'https://pw.deltaverse.site/study/batches';
     const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000; // 86,400,000 ms (24 hours)
     const STORAGE_VERIFIED_UNTIL = 'pw_gyansarthi_verified_until';
     const STORAGE_PENDING_TOKEN = 'pw_gyansarthi_pending_token';
+    const AROLINKS_API_TOKEN = 'a7616376b1ef8920d0ad9a7f6ffbb0313d8bbce7';
 
     const verificationOverlay = document.getElementById('verification-overlay');
-    const portalFrame = document.getElementById('portal-frame');
+    const unlockedOverlay = document.getElementById('unlocked-overlay');
     const verifyNowBtn = document.getElementById('verify-now-btn');
     const verifyBtnText = document.getElementById('verify-btn-text');
     const verifyErrorMsg = document.getElementById('verify-error-msg');
     const lockStatusPill = document.getElementById('lock-status-pill');
     const timerBadge = document.getElementById('timer-badge');
     const timerText = document.getElementById('timer-text');
+    const unlockedPillTimer = document.getElementById('unlocked-pill-timer');
     const toastBanner = document.getElementById('toast-banner');
+    const autoLaunchBox = document.getElementById('auto-launch-box');
+    const autoLaunchText = document.getElementById('auto-launch-text');
+    const cancelAutoBtn = document.getElementById('cancel-auto-btn');
+    const launchBatchesBtn = document.getElementById('launch-batches-btn');
+
+    let autoLaunchScheduled = false;
+    let autoLaunchCancelled = false;
+    let autoLaunchTimeout = null;
+    let justVerifiedNow = false;
 
     function showToast(message) {
       toastBanner.textContent = message;
@@ -563,8 +677,6 @@
         toastBanner.classList.remove('show');
       }, 4500);
     }
-
-    const AROLINKS_API_TOKEN = 'a7616376b1ef8920d0ad9a7f6ffbb0313d8bbce7';
 
     // Check if returning from Arolinks verification callback
     function checkCallbackReturn() {
@@ -576,6 +688,7 @@
         const unlockUntil = Date.now() + TWENTY_FOUR_HOURS_MS;
         localStorage.setItem(STORAGE_VERIFIED_UNTIL, unlockUntil.toString());
         localStorage.removeItem(STORAGE_PENDING_TOKEN);
+        justVerifiedNow = true;
 
         // Clean callback query parameter from address bar
         const cleanUrl = window.location.origin + window.location.pathname;
@@ -596,6 +709,25 @@
       return `${minutes}m ${String(seconds).padStart(2, '0')}s left`;
     }
 
+    function openStudyPortal() {
+      startProgress();
+      window.location.href = PORTAL_URL;
+    }
+
+    launchBatchesBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openStudyPortal();
+    });
+
+    cancelAutoBtn.addEventListener('click', () => {
+      autoLaunchCancelled = true;
+      if (autoLaunchTimeout) {
+        clearTimeout(autoLaunchTimeout);
+        autoLaunchTimeout = null;
+      }
+      autoLaunchBox.style.display = 'none';
+    });
+
     function evaluateAccessStatus() {
       const verifiedUntil = parseInt(localStorage.getItem(STORAGE_VERIFIED_UNTIL) || '0', 10);
       const now = Date.now();
@@ -604,26 +736,43 @@
       if (remainingMs > 0) {
         // UNLOCKED STATE
         verificationOverlay.classList.add('hidden');
+        unlockedOverlay.classList.remove('hidden');
         timerBadge.style.display = 'inline-flex';
-        timerText.textContent = formatRemainingTime(remainingMs);
+        const formatted = formatRemainingTime(remainingMs);
+        timerText.textContent = formatted;
+        unlockedPillTimer.textContent = formatted;
 
-        if (portalFrame.getAttribute('src') !== PORTAL_URL) {
-          startProgress();
-          portalFrame.setAttribute('src', PORTAL_URL);
+        if (!autoLaunchScheduled && !autoLaunchCancelled) {
+          autoLaunchScheduled = true;
+          const navEntries = (window.performance && window.performance.getEntriesByType)
+            ? window.performance.getEntriesByType('navigation')
+            : [];
+          const isBackNav = navEntries.length > 0 && navEntries[0].type === 'back_forward';
+
+          if (isBackNav && !justVerifiedNow) {
+            // User pressed Back from study batches to check timer; don't force redirect
+            autoLaunchBox.style.display = 'none';
+          } else {
+            const delayMs = justVerifiedNow ? 900 : 1200;
+            autoLaunchText.textContent = '🚀 Opening Study Batches in 1s...';
+            autoLaunchTimeout = setTimeout(() => {
+              if (!autoLaunchCancelled) {
+                openStudyPortal();
+              }
+            }, delayMs);
+          }
         }
       } else {
         // LOCKED / EXPIRED STATE
         verificationOverlay.classList.remove('hidden');
+        unlockedOverlay.classList.add('hidden');
         timerBadge.style.display = 'none';
+        autoLaunchScheduled = false;
 
         if (verifiedUntil > 0) {
           lockStatusPill.innerHTML = '<span>⏰ 24h Access Expired — Verify Again</span>';
         } else {
           lockStatusPill.innerHTML = '<span>🔒 Verification Required</span>';
-        }
-
-        if (portalFrame.getAttribute('src') !== 'about:blank') {
-          portalFrame.setAttribute('src', 'about:blank');
         }
       }
     }
@@ -644,7 +793,6 @@
       const quickLinkFallback = `https://arolinks.com/st?api=${encodeURIComponent(AROLINKS_API_TOKEN)}&url=${encodeURIComponent(callbackUrl)}`;
 
       try {
-        // 1. Direct browser call to Arolinks API (CORS supported)
         const response = await fetch(directApiUrl);
         const data = await response.json();
 
@@ -654,7 +802,6 @@
           return;
         }
       } catch (e) {
-        // Try serverless proxy fallback if direct fetch was blocked
         try {
           const proxyRes = await fetch(`/api/verify-link?url=${encodeURIComponent(callbackUrl)}`);
           const proxyData = await proxyRes.json();
@@ -666,7 +813,6 @@
         } catch (_) {}
       }
 
-      // 3. Guaranteed redirect via Arolinks Quick Link
       verifyBtnText.textContent = '🚀 Redirecting to Verification...';
       window.location.href = quickLinkFallback;
     });
@@ -677,7 +823,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
-          .then((reg) => console.log('PWA ServiceWorker registered:', reg.scope))
+          .then((reg) => reg.update())
           .catch((err) => console.log('ServiceWorker registration failed:', err));
       });
     }
@@ -708,12 +854,6 @@
         themeColorMeta.setAttribute('content', '#F8FAFC');
         localStorage.setItem('pw_theme', 'light');
       }
-
-      try {
-        if (portalFrame && portalFrame.contentWindow) {
-          portalFrame.contentWindow.postMessage({ type: 'PW_THEME_CHANGE', theme: dark ? 'dark' : 'light' }, '*');
-        }
-      } catch (e) {}
     }
 
     applyTheme(isDark);
@@ -729,23 +869,9 @@
 
     function startProgress() {
       progressBar.style.opacity = '1';
-      progressBar.style.width = '30%';
-      setTimeout(() => { progressBar.style.width = '70%'; }, 250);
+      progressBar.style.width = '40%';
+      setTimeout(() => { progressBar.style.width = '85%'; }, 250);
     }
-
-    function completeProgress() {
-      progressBar.style.width = '100%';
-      setTimeout(() => {
-        progressBar.style.opacity = '0';
-        setTimeout(() => { progressBar.style.width = '0%'; }, 300);
-      }, 200);
-    }
-
-    portalFrame.addEventListener('load', () => {
-      if (portalFrame.getAttribute('src') !== 'about:blank') {
-        completeProgress();
-      }
-    });
 
     // =========================================================================
     // 5. NATIVE PWA INSTALL PROMPT
