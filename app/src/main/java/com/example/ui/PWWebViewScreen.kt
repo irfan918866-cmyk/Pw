@@ -78,6 +78,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.R
+import com.example.verification.ArolinksVerificationManager
+import kotlinx.coroutines.delay
 
 private const val DEFAULT_URL = "https://pw.deltaverse.site/study/batches"
 private val PW_HEADERS = mapOf(
@@ -247,6 +249,21 @@ fun PWWebViewScreen(
     var hasError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
+    // 24-hour Arolinks verification state
+    var isUnlocked by remember { mutableStateOf(ArolinksVerificationManager.isUnlocked(context)) }
+    var remainingMillis by remember { mutableLongStateOf(ArolinksVerificationManager.getRemainingMillis(context)) }
+    var hasExpiredPreviously by remember { mutableStateOf(ArolinksVerificationManager.getVerifiedUntil(context) > 0L) }
+
+    // 1-second watchdog timer to enforce 24-hour lock expiry
+    LaunchedEffect(Unit) {
+        while (true) {
+            isUnlocked = ArolinksVerificationManager.isUnlocked(context)
+            remainingMillis = ArolinksVerificationManager.getRemainingMillis(context)
+            hasExpiredPreviously = ArolinksVerificationManager.getVerifiedUntil(context) > 0L
+            delay(1000L)
+        }
+    }
+
     // Fullscreen video state
     var customView by remember { mutableStateOf<View?>(null) }
     var customViewCallback by remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
@@ -320,13 +337,22 @@ fun PWWebViewScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Full screen web view container
+        // Full screen web view or 24h Verification Gate container
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            if (hasError) {
+            if (!isUnlocked) {
+                ArolinksVerificationGate(
+                    isDarkMode = isDarkMode,
+                    hasExpiredPreviously = hasExpiredPreviously,
+                    onVerificationSuccess = {
+                        isUnlocked = ArolinksVerificationManager.isUnlocked(context)
+                        remainingMillis = ArolinksVerificationManager.getRemainingMillis(context)
+                    }
+                )
+            } else if (hasError) {
                 OfflineErrorView(
                     errorMessage = errorMessage,
                     onRetry = {
@@ -543,7 +569,7 @@ fun PWWebViewScreen(
             }
 
             // Subtle Linear Progress Indicator at the top
-            if (isLoading && progress in 1..99) {
+            if (isUnlocked && isLoading && progress in 1..99) {
                 LinearProgressIndicator(
                     progress = { progress / 100f },
                     modifier = Modifier
@@ -553,6 +579,41 @@ fun PWWebViewScreen(
                     color = Color(0xFF6366F1),
                     trackColor = Color.Transparent
                 )
+            }
+
+            // Active 24-Hour Verification Countdown Pill (Bottom Start)
+            if (isUnlocked && remainingMillis > 0L) {
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = if (isDarkMode) Color(0xFF181C26).copy(alpha = 0.9f) else Color.White.copy(alpha = 0.92f),
+                    shadowElevation = 6.dp,
+                    border = BorderStroke(
+                        1.dp,
+                        Color(0xFF10B981).copy(alpha = 0.45f)
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 16.dp, bottom = 28.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF10B981))
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = ArolinksVerificationManager.formatRemainingTime(remainingMillis),
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDarkMode) Color(0xFFECFDF5) else Color(0xFF065F46)
+                        )
+                    }
+                }
             }
 
             // Floating Light / Dark Mode Switcher Button

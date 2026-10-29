@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pw-gyansarthi-v1';
+const CACHE_NAME = 'pw-gyansarthi-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -32,6 +32,14 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Never cache API verification endpoints
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   // Navigation request fallback
   if (event.request.mode === 'navigate') {
     event.respondWith(
