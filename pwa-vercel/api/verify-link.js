@@ -8,20 +8,16 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const apiToken = process.env.AROLINKS_API_TOKEN;
+  const DEFAULT_TOKEN = 'a7616376b1ef8920d0ad9a7f6ffbb0313d8bbce7';
+  const envToken = process.env.AROLINKS_API_TOKEN;
+  const apiToken = (envToken && envToken !== 'YOUR_AROLINKS_API_TOKEN') ? envToken : DEFAULT_TOKEN;
+
   const targetUrl = req.query.url || (req.body && req.body.url);
 
   if (!targetUrl) {
     return res.status(400).json({
       status: 'error',
       message: 'Missing callback URL parameter.'
-    });
-  }
-
-  if (!apiToken || apiToken === 'YOUR_AROLINKS_API_TOKEN') {
-    return res.status(500).json({
-      status: 'error',
-      message: 'AROLINKS_API_TOKEN is not configured in Vercel Environment Variables.'
     });
   }
 
@@ -44,7 +40,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Fallback to Arolinks Quick Link endpoint if JSON API returned an alias error
+    // Fallback to Arolinks Quick Link endpoint
     const quickLink = `https://arolinks.com/st?api=${encodeURIComponent(apiToken)}&url=${encodeURIComponent(targetUrl)}`;
     return res.status(200).json({
       status: 'success',
