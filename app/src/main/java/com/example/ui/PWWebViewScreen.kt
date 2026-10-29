@@ -158,10 +158,70 @@ private const val REMOVE_TELEGRAM_JS = """
         }
     } catch(e) {}
 
+    // Safely patch window.__SERVER_INFO__ & /api/auth/serverInfo so React renders "Pw GyanSarthi" natively
+    try {
+        if (!window.__pwBrandInfoPatched) {
+            window.__pwBrandInfoPatched = true;
+            var patchInfoObj = function(obj) {
+                if (obj && typeof obj === 'object') {
+                    if (obj.webName) obj.webName = 'Pw GyanSarthi';
+                    if (obj.sidebarTitle) obj.sidebarTitle = 'Pw GyanSarthi';
+                }
+                return obj;
+            };
+            if (window.__SERVER_INFO__) {
+                patchInfoObj(window.__SERVER_INFO__);
+            }
+            var _serverInfoVal = window.__SERVER_INFO__;
+            Object.defineProperty(window, '__SERVER_INFO__', {
+                configurable: true,
+                enumerable: true,
+                get: function() { return _serverInfoVal; },
+                set: function(v) { _serverInfoVal = patchInfoObj(v); }
+            });
+
+            var origFetch = window.fetch;
+            if (typeof origFetch === 'function') {
+                window.fetch = function() {
+                    var args = arguments;
+                    var reqUrl = (typeof args[0] === 'string') ? args[0] : (args[0] && args[0].url ? args[0].url : '');
+                    if (reqUrl && reqUrl.indexOf('/api/auth/serverInfo') !== -1) {
+                        return origFetch.apply(this, args).then(function(response) {
+                            return response.clone().json().then(function(data) {
+                                patchInfoObj(data);
+                                return new Response(JSON.stringify(data), {
+                                    status: response.status,
+                                    statusText: response.statusText,
+                                    headers: response.headers
+                                });
+                            }).catch(function() {
+                                return response;
+                            });
+                        });
+                    }
+                    return origFetch.apply(this, args);
+                };
+            }
+        }
+    } catch (e) {}
+
+    function formatBrandText(str) {
+        if (!str) return str;
+        var out = str.replace(/\bPW\s+Delta\s*Verse\b/gi, 'Pw GyanSarthi');
+        out = out.replace(/delta\s*verse/gi, 'Pw GyanSarthi');
+        out = out.replace(/\bPW\s+Pw\s+GyanSarthi\b/gi, 'Pw GyanSarthi');
+        out = out.replace(/\bPw\s+Pw\s+GyanSarthi\b/gi, 'Pw GyanSarthi');
+        return out;
+    }
+
     function applyGyanSarthiBranding() {
         try {
+            if (window.__SERVER_INFO__) {
+                window.__SERVER_INFO__.webName = 'Pw GyanSarthi';
+                window.__SERVER_INFO__.sidebarTitle = 'Pw GyanSarthi';
+            }
             if (document.title && /delta\s*verse/i.test(document.title)) {
-                document.title = document.title.replace(/delta\s*verse/gi, 'GyanSarthi');
+                document.title = formatBrandText(document.title);
             }
             var root = document.body || document.documentElement;
             if (!root) return;
@@ -171,10 +231,12 @@ private const val REMOVE_TELEGRAM_JS = """
                 {
                     acceptNode: function(node) {
                         var p = node.parentNode ? node.parentNode.nodeName : '';
-                        if (p === 'SCRIPT' || p === 'STYLE' || p === 'NOSCRIPT' || p === 'TEXTAREA') {
+                        if (p === 'SCRIPT' || p === 'STYLE' || p === 'NOSCRIPT' || p === 'TEXTAREA' || p === 'CODE' || p === 'PRE') {
                             return NodeFilter.FILTER_REJECT;
                         }
-                        if (node.nodeValue && /delta\s*verse/i.test(node.nodeValue)) {
+                        var val = node.nodeValue;
+                        if (!val) return NodeFilter.FILTER_SKIP;
+                        if (/delta\s*verse/i.test(val) || val.trim() === 'DV') {
                             return NodeFilter.FILTER_ACCEPT;
                         }
                         return NodeFilter.FILTER_SKIP;
@@ -188,7 +250,12 @@ private const val REMOVE_TELEGRAM_JS = """
                 toReplace.push(node);
             }
             for (var i = 0; i < toReplace.length; i++) {
-                toReplace[i].nodeValue = toReplace[i].nodeValue.replace(/delta\s*verse/gi, 'GyanSarthi');
+                var n = toReplace[i];
+                if (n.nodeValue.trim() === 'DV') {
+                    n.nodeValue = n.nodeValue.replace('DV', 'PW');
+                } else {
+                    n.nodeValue = formatBrandText(n.nodeValue);
+                }
             }
             var tagged = root.querySelectorAll ? root.querySelectorAll('img[alt*="Delta" i], img[title*="Delta" i], [aria-label*="Delta" i], [placeholder*="Delta" i]') : [];
             for (var j = 0; j < tagged.length; j++) {
@@ -198,7 +265,7 @@ private const val REMOVE_TELEGRAM_JS = """
                     var attrName = attrs[a];
                     var val = el.getAttribute(attrName);
                     if (val && /delta\s*verse/i.test(val)) {
-                        el.setAttribute(attrName, val.replace(/delta\s*verse/gi, 'GyanSarthi'));
+                        el.setAttribute(attrName, formatBrandText(val));
                     }
                 }
             }
@@ -217,7 +284,8 @@ private const val REMOVE_TELEGRAM_JS = """
         });
         window.__tgObserver.observe(document.documentElement || document.body, {
             childList: true,
-            subtree: true
+            subtree: true,
+            characterData: true
         });
     }
 })();
@@ -243,7 +311,7 @@ fun PWWebViewScreen(
 
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
     var currentUrl by remember { mutableStateOf(initialUrl) }
-    var pageTitle by remember { mutableStateOf("GyanSarthi") }
+    var pageTitle by remember { mutableStateOf("Pw GyanSarthi") }
     var progress by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
     var hasError by remember { mutableStateOf(false) }
@@ -417,8 +485,8 @@ fun PWWebViewScreen(
 
                                 override fun onReceivedTitle(view: WebView?, title: String?) {
                                     if (!title.isNullOrBlank()) {
-                                        val clean = title.replace("Delta Verse", "GyanSarthi", ignoreCase = true)
-                                            .replace("DeltaVerse", "GyanSarthi", ignoreCase = true)
+                                        val clean = title.replace("Delta Verse", "Pw GyanSarthi", ignoreCase = true)
+                                            .replace("DeltaVerse", "Pw GyanSarthi", ignoreCase = true)
                                         if (clean.isNotBlank()) {
                                             pageTitle = clean
                                         }

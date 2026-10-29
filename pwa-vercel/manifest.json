@@ -1,7 +1,7 @@
 {
-  "name": "PW GyanSarthi",
-  "short_name": "PW",
-  "description": "PW GyanSarthi Study Batches & Online Lectures Portal",
+  "name": "Pw GyanSarthi",
+  "short_name": "Pw GyanSarthi",
+  "description": "Pw GyanSarthi Study Batches & Online Lectures Portal",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0F1117",

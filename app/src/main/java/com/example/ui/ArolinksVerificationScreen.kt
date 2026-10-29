@@ -202,7 +202,7 @@ fun ArolinksVerificationGate(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     Text(
-                        text = "PW GyanSarthi Access",
+                        text = "Pw GyanSarthi Access",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -253,7 +253,7 @@ fun ArolinksVerificationGate(
                             )
                             VerificationStepRow(
                                 number = "3",
-                                text = "Automatically unlock PW GyanSarthi for 24 Hours",
+                                text = "Automatically unlock Pw GyanSarthi for 24 Hours",
                                 isDarkMode = isDarkMode
                             )
                         }
