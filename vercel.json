@@ -3,6 +3,78 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/verify-link",
+      "destination": "/api/verify-link.js"
+    },
+    {
+      "source": "/api/proxy",
+      "destination": "/api/proxy.js"
+    },
+    {
+      "source": "/api/:subpath*",
+      "destination": "/api/proxy.js?__p=/api/:subpath*"
+    },
+    {
+      "source": "/_next/static/chunks/app/:subpath*",
+      "destination": "/api/proxy.js?__p=/_next/static/chunks/app/:subpath*"
+    },
+    {
+      "source": "/_next/:subpath*",
+      "destination": "https://pw.deltaverse.site/_next/:subpath*"
+    },
+    {
+      "source": "/assets/:subpath*",
+      "destination": "https://pw.deltaverse.site/assets/:subpath*"
+    },
+    {
+      "source": "/study",
+      "destination": "/api/proxy.js?__p=/study"
+    },
+    {
+      "source": "/study/:subpath*",
+      "destination": "/api/proxy.js?__p=/study/:subpath*"
+    },
+    {
+      "source": "/guest",
+      "destination": "/api/proxy.js?__p=/guest"
+    },
+    {
+      "source": "/guest/:subpath*",
+      "destination": "/api/proxy.js?__p=/guest/:subpath*"
+    },
+    {
+      "source": "/auth",
+      "destination": "/api/proxy.js?__p=/auth"
+    },
+    {
+      "source": "/auth/:subpath*",
+      "destination": "/api/proxy.js?__p=/auth/:subpath*"
+    },
+    {
+      "source": "/login",
+      "destination": "/api/proxy.js?__p=/login"
+    },
+    {
+      "source": "/login/:subpath*",
+      "destination": "/api/proxy.js?__p=/login/:subpath*"
+    },
+    {
+      "source": "/live",
+      "destination": "/api/proxy.js?__p=/live"
+    },
+    {
+      "source": "/live/:subpath*",
+      "destination": "/api/proxy.js?__p=/live/:subpath*"
+    },
+    {
+      "source": "/watch/:subpath*",
+      "destination": "/api/proxy.js?__p=/watch/:subpath*"
+    },
+    {
+      "source": "/batch/:subpath*",
+      "destination": "/api/proxy.js?__p=/batch/:subpath*"
+    },
+    {
       "source": "/",
       "destination": "/index.html"
     }

@@ -33,14 +33,25 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  const p = url.pathname;
 
-  // Never cache API verification endpoints
-  if (url.pathname.startsWith('/api/')) {
+  // Never intercept proxied study portal or API routes
+  if (
+    p.startsWith('/api/') ||
+    p.startsWith('/study') ||
+    p.startsWith('/guest') ||
+    p.startsWith('/auth') ||
+    p.startsWith('/login') ||
+    p.startsWith('/live') ||
+    p.startsWith('/watch') ||
+    p.startsWith('/batch') ||
+    p.startsWith('/_next/')
+  ) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // Network-first for navigation so updates take effect immediately
+  // Network-first for root navigation
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -54,7 +65,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache first for static local assets
+  // Cache first for static local PWA assets
   event.respondWith(
     caches.match(event.request).then((cached) => {
       return cached || fetch(event.request).catch(() => cached);

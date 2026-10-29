@@ -89,6 +89,103 @@ private val PW_HEADERS = mapOf(
 
 private const val REMOVE_TELEGRAM_JS = """
 (function() {
+    function replaceBrandText(text) {
+        if (!text || typeof text !== 'string') return text;
+        var out = text;
+        out = out.replace(/delta\s+verse/gi, 'GyanSarthi');
+        out = out.replace(/delta\s+teacher/gi, 'GyanSarthi Teacher');
+        out = out.replace(/_byDeltaVerse/gi, '_byGyanSarthi');
+        out = out.replace(/Welcome\s+to\s+Delta[a-zA-Z\s]*/gi, 'Welcome to GyanSarthi');
+        out = out.replace(/(^|[^./a-zA-Z0-9_-])deltaverse(?![a-zA-Z0-9_-]|\.[a-zA-Z0-9])/gi, '$1GyanSarthi');
+        return out;
+    }
+
+    function hasBrandText(text) {
+        if (!text || typeof text !== 'string') return false;
+        return /delta\s*verse|delta\s+teacher|Welcome\s+to\s+Delta/i.test(text);
+    }
+
+    // 1. Sanitize window.__SERVER_INFO__ display fields only (leaves backend flags intact)
+    try {
+        function sanitizeServerInfoObj(obj) {
+            if (obj && typeof obj === 'object') {
+                if (typeof obj.webName === 'string') obj.webName = 'GyanSarthi';
+                if (typeof obj.sidebarTitle === 'string') obj.sidebarTitle = 'GyanSarthi';
+            }
+            return obj;
+        }
+        if (window.__SERVER_INFO__) {
+            sanitizeServerInfoObj(window.__SERVER_INFO__);
+        }
+        if (!window.__serverInfoPatched) {
+            window.__serverInfoPatched = true;
+            var _srvInfo = window.__SERVER_INFO__;
+            Object.defineProperty(window, '__SERVER_INFO__', {
+                configurable: true,
+                enumerable: true,
+                get: function() { return _srvInfo; },
+                set: function(val) { _srvInfo = sanitizeServerInfoObj(val); }
+            });
+        }
+    } catch (e) {}
+
+    // 2. Sanitize Next.js RSC stream (__next_f) display text only
+    try {
+        function sanitizeNextChunk(item) {
+            if (Array.isArray(item) && typeof item[1] === 'string' && hasBrandText(item[1])) {
+                item[1] = replaceBrandText(item[1]);
+            }
+            return item;
+        }
+        if (Array.isArray(window.__next_f)) {
+            for (var nIdx = 0; nIdx < window.__next_f.length; nIdx++) {
+                sanitizeNextChunk(window.__next_f[nIdx]);
+            }
+            if (!window.__nextFPatched) {
+                window.__nextFPatched = true;
+                var origPush = window.__next_f.push;
+                window.__next_f.push = function() {
+                    for (var aIdx = 0; aIdx < arguments.length; aIdx++) {
+                        sanitizeNextChunk(arguments[aIdx]);
+                    }
+                    return origPush.apply(this, arguments);
+                };
+            }
+        }
+    } catch (e) {}
+
+    // 3. Intercept /api/auth/serverInfo JSON display name without altering backend request/cookies
+    try {
+        if (!window.__fetchBrandingPatched && window.fetch) {
+            window.__fetchBrandingPatched = true;
+            var origFetch = window.fetch;
+            window.fetch = function() {
+                var args = arguments;
+                var reqUrl = '';
+                try {
+                    reqUrl = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url ? args[0].url : '');
+                } catch (e) {}
+                return origFetch.apply(this, args).then(function(response) {
+                    try {
+                        if (reqUrl && reqUrl.indexOf('/api/auth/serverInfo') !== -1 && response && response.json) {
+                            var origJson = response.json.bind(response);
+                            response.json = function() {
+                                return origJson().then(function(data) {
+                                    if (data && typeof data === 'object') {
+                                        data.webName = 'GyanSarthi';
+                                        data.sidebarTitle = 'GyanSarthi';
+                                    }
+                                    return data;
+                                });
+                            };
+                        }
+                    } catch (e) {}
+                    return response;
+                });
+            };
+        }
+    } catch (e) {}
+
     function purgeTelegram() {
         try {
             // 1. Remove all Telegram links
@@ -99,14 +196,16 @@ private const val REMOVE_TELEGRAM_JS = """
                 item.remove();
             }
 
-            // 2. Remove any modal, dialog, popup, or overlay mentioning Telegram
+            // 2. Remove any modal, dialog, popup, or overlay mentioning Telegram (excluding human check dialog)
             var popups = document.querySelectorAll('[role="dialog"], dialog, [class*="modal"], [class*="popup"], [class*="Dialog"], div[class*="fixed"], div[class*="absolute"]');
             for (var j = 0; j < popups.length; j++) {
                 var popup = popups[j];
+                if (popup.getAttribute('aria-labelledby') === 'hc-title' || popup.querySelector('#hc-title')) {
+                    continue;
+                }
                 var text = (popup.innerText || popup.textContent || '').toLowerCase();
                 if (text.indexOf('telegram') !== -1 || (text.indexOf('join') !== -1 && text.indexOf('community') !== -1) || text.indexOf('delta_dv') !== -1) {
                     popup.remove();
-                    // Clean up backdrops & overlays
                     var backdrops = document.querySelectorAll('[class*="backdrop"], div[class*="fixed"][class*="inset-0"]');
                     for (var k = 0; k < backdrops.length; k++) {
                         var b = backdrops[k];
@@ -126,14 +225,18 @@ private const val REMOVE_TELEGRAM_JS = """
                 var bText = (btn.innerText || btn.textContent || '').toLowerCase().trim();
                 if (bText === 'join telegram' || bText.indexOf('join telegram') !== -1 || bText.indexOf('telegram community') !== -1 || bText.indexOf('telegram channel') !== -1) {
                     var container = btn.closest('[role="dialog"], [class*="modal"], div[class*="fixed"]') || btn;
-                    container.remove();
-                    if (document.body) document.body.style.overflow = 'auto';
+                    if (container && !container.querySelector('#hc-title')) {
+                        container.remove();
+                        if (document.body) document.body.style.overflow = 'auto';
+                    } else {
+                        btn.remove();
+                    }
                 }
             }
         } catch (e) {}
     }
 
-    // Hide via CSS immediately
+    // Hide Telegram links via CSS immediately
     try {
         var styleId = 'anti-tg-style';
         if (!document.getElementById(styleId)) {
@@ -158,73 +261,24 @@ private const val REMOVE_TELEGRAM_JS = """
         }
     } catch(e) {}
 
-    // Safely patch window.__SERVER_INFO__ & /api/auth/serverInfo so React renders "Pw GyanSarthi" natively
-    try {
-        if (!window.__pwBrandInfoPatched) {
-            window.__pwBrandInfoPatched = true;
-            var patchInfoObj = function(obj) {
-                if (obj && typeof obj === 'object') {
-                    if (obj.webName) obj.webName = 'Pw GyanSarthi';
-                    if (obj.sidebarTitle) obj.sidebarTitle = 'Pw GyanSarthi';
-                }
-                return obj;
-            };
-            if (window.__SERVER_INFO__) {
-                patchInfoObj(window.__SERVER_INFO__);
-            }
-            var _serverInfoVal = window.__SERVER_INFO__;
-            Object.defineProperty(window, '__SERVER_INFO__', {
-                configurable: true,
-                enumerable: true,
-                get: function() { return _serverInfoVal; },
-                set: function(v) { _serverInfoVal = patchInfoObj(v); }
-            });
-
-            var origFetch = window.fetch;
-            if (typeof origFetch === 'function') {
-                window.fetch = function() {
-                    var args = arguments;
-                    var reqUrl = (typeof args[0] === 'string') ? args[0] : (args[0] && args[0].url ? args[0].url : '');
-                    if (reqUrl && reqUrl.indexOf('/api/auth/serverInfo') !== -1) {
-                        return origFetch.apply(this, args).then(function(response) {
-                            return response.clone().json().then(function(data) {
-                                patchInfoObj(data);
-                                return new Response(JSON.stringify(data), {
-                                    status: response.status,
-                                    statusText: response.statusText,
-                                    headers: response.headers
-                                });
-                            }).catch(function() {
-                                return response;
-                            });
-                        });
-                    }
-                    return origFetch.apply(this, args);
-                };
-            }
-        }
-    } catch (e) {}
-
-    function formatBrandText(str) {
-        if (!str) return str;
-        var out = str.replace(/\bPW\s+Delta\s*Verse\b/gi, 'Pw GyanSarthi');
-        out = out.replace(/delta\s*verse/gi, 'Pw GyanSarthi');
-        out = out.replace(/\bPW\s+Pw\s+GyanSarthi\b/gi, 'Pw GyanSarthi');
-        out = out.replace(/\bPw\s+Pw\s+GyanSarthi\b/gi, 'Pw GyanSarthi');
-        return out;
-    }
-
     function applyGyanSarthiBranding() {
         try {
             if (window.__SERVER_INFO__) {
-                window.__SERVER_INFO__.webName = 'Pw GyanSarthi';
-                window.__SERVER_INFO__.sidebarTitle = 'Pw GyanSarthi';
+                if (window.__SERVER_INFO__.webName && window.__SERVER_INFO__.webName !== 'GyanSarthi') {
+                    window.__SERVER_INFO__.webName = 'GyanSarthi';
+                }
+                if (window.__SERVER_INFO__.sidebarTitle && window.__SERVER_INFO__.sidebarTitle !== 'GyanSarthi') {
+                    window.__SERVER_INFO__.sidebarTitle = 'GyanSarthi';
+                }
             }
-            if (document.title && /delta\s*verse/i.test(document.title)) {
-                document.title = formatBrandText(document.title);
+
+            if (document.title && hasBrandText(document.title)) {
+                document.title = replaceBrandText(document.title);
             }
+
             var root = document.body || document.documentElement;
             if (!root) return;
+
             var walker = document.createTreeWalker(
                 root,
                 NodeFilter.SHOW_TEXT,
@@ -235,8 +289,7 @@ private const val REMOVE_TELEGRAM_JS = """
                             return NodeFilter.FILTER_REJECT;
                         }
                         var val = node.nodeValue;
-                        if (!val) return NodeFilter.FILTER_SKIP;
-                        if (/delta\s*verse/i.test(val) || val.trim() === 'DV') {
+                        if (val && (hasBrandText(val) || val.trim() === 'DV')) {
                             return NodeFilter.FILTER_ACCEPT;
                         }
                         return NodeFilter.FILTER_SKIP;
@@ -244,6 +297,7 @@ private const val REMOVE_TELEGRAM_JS = """
                 },
                 false
             );
+
             var node;
             var toReplace = [];
             while (node = walker.nextNode()) {
@@ -251,21 +305,28 @@ private const val REMOVE_TELEGRAM_JS = """
             }
             for (var i = 0; i < toReplace.length; i++) {
                 var n = toReplace[i];
-                if (n.nodeValue.trim() === 'DV') {
-                    n.nodeValue = n.nodeValue.replace('DV', 'PW');
+                var currentVal = n.nodeValue;
+                if (!currentVal) continue;
+                if (currentVal.trim() === 'DV') {
+                    n.nodeValue = currentVal.replace('DV', 'GS');
                 } else {
-                    n.nodeValue = formatBrandText(n.nodeValue);
+                    var updated = replaceBrandText(currentVal);
+                    if (updated !== currentVal) {
+                        n.nodeValue = updated;
+                    }
                 }
             }
-            var tagged = root.querySelectorAll ? root.querySelectorAll('img[alt*="Delta" i], img[title*="Delta" i], [aria-label*="Delta" i], [placeholder*="Delta" i]') : [];
+
+            // Replace visible attributes (alt, title, aria-label, placeholder) without touching src or href
+            var tagged = root.querySelectorAll ? root.querySelectorAll('[alt*="Delta" i], [title*="Delta" i], [aria-label*="Delta" i], [placeholder*="Delta" i]') : [];
             for (var j = 0; j < tagged.length; j++) {
                 var el = tagged[j];
                 var attrs = ['alt', 'title', 'aria-label', 'placeholder'];
                 for (var a = 0; a < attrs.length; a++) {
                     var attrName = attrs[a];
                     var val = el.getAttribute(attrName);
-                    if (val && /delta\s*verse/i.test(val)) {
-                        el.setAttribute(attrName, formatBrandText(val));
+                    if (val && hasBrandText(val)) {
+                        el.setAttribute(attrName, replaceBrandText(val));
                     }
                 }
             }
@@ -276,17 +337,25 @@ private const val REMOVE_TELEGRAM_JS = """
     purgeTelegram();
     applyGyanSarthiBranding();
 
-    // Attach MutationObserver
-    if (!window.__tgObserver && (document.documentElement || document.body)) {
+    // Attach MutationObserver including characterData for dynamic React text updates
+    if (!window.__tgObserver && document.documentElement) {
         window.__tgObserver = new MutationObserver(function() {
             purgeTelegram();
             applyGyanSarthiBranding();
         });
-        window.__tgObserver.observe(document.documentElement || document.body, {
+        window.__tgObserver.observe(document.documentElement, {
             childList: true,
             subtree: true,
             characterData: true
         });
+    }
+
+    // Periodic lightweight check across Next.js SPA route changes
+    if (!window.__gsBrandInterval) {
+        window.__gsBrandInterval = setInterval(function() {
+            purgeTelegram();
+            applyGyanSarthiBranding();
+        }, 300);
     }
 })();
 """
@@ -311,7 +380,7 @@ fun PWWebViewScreen(
 
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
     var currentUrl by remember { mutableStateOf(initialUrl) }
-    var pageTitle by remember { mutableStateOf("Pw GyanSarthi") }
+    var pageTitle by remember { mutableStateOf("GyanSarthi") }
     var progress by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
     var hasError by remember { mutableStateOf(false) }
@@ -485,8 +554,8 @@ fun PWWebViewScreen(
 
                                 override fun onReceivedTitle(view: WebView?, title: String?) {
                                     if (!title.isNullOrBlank()) {
-                                        val clean = title.replace("Delta Verse", "Pw GyanSarthi", ignoreCase = true)
-                                            .replace("DeltaVerse", "Pw GyanSarthi", ignoreCase = true)
+                                        val clean = title.replace("Delta Verse", "GyanSarthi", ignoreCase = true)
+                                            .replace("DeltaVerse", "GyanSarthi", ignoreCase = true)
                                         if (clean.isNotBlank()) {
                                             pageTitle = clean
                                         }
