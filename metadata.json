@@ -1,0 +1,6 @@
+{
+  "name": "PW",
+  "description": "PW GyanSarthi Study Batches portal with interactive web experience and video lectures.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

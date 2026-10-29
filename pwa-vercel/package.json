@@ -1,0 +1,9 @@
+{
+  "name": "pw-gyansarthi-pwa",
+  "version": "1.0.0",
+  "description": "PW GyanSarthi Progressive Web App",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Static PWA ready for Vercel'"
+  }
+}
