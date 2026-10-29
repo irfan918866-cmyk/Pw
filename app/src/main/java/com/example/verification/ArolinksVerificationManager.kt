@@ -80,6 +80,19 @@ object ArolinksVerificationManager {
 
     private const val DEFAULT_AROLINKS_TOKEN = "a7616376b1ef8920d0ad9a7f6ffbb0313d8bbce7"
 
+    fun verifyAdminToken(context: Context, inputToken: String): Boolean {
+        val cleanInput = inputToken.trim()
+        if (cleanInput.isEmpty()) return false
+        val configuredToken = BuildConfig.AROLINKS_API_TOKEN.trim()
+        val isMatch = cleanInput.equals(DEFAULT_AROLINKS_TOKEN, ignoreCase = true) ||
+            (configuredToken.isNotEmpty() && configuredToken != "YOUR_AROLINKS_API_TOKEN" && cleanInput.equals(configuredToken, ignoreCase = true))
+        if (isMatch) {
+            markVerifiedFor24Hours(context)
+            return true
+        }
+        return false
+    }
+
     suspend fun createVerificationLink(context: Context): Result<String> = withContext(Dispatchers.IO) {
         val configuredToken = BuildConfig.AROLINKS_API_TOKEN.trim()
         val apiToken = if (configuredToken.isNotEmpty() && configuredToken != "YOUR_AROLINKS_API_TOKEN") {

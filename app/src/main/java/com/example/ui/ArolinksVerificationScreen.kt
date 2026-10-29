@@ -33,7 +33,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Button
@@ -46,6 +48,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,6 +68,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -84,6 +89,9 @@ fun ArolinksVerificationGate(
     var isGeneratingLink by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var activeVerificationUrl by remember { mutableStateOf<String?>(null) }
+    var showAdminBox by remember { mutableStateOf(false) }
+    var adminTokenInput by remember { mutableStateOf("") }
+    var adminError by remember { mutableStateOf<String?>(null) }
 
     if (activeVerificationUrl != null) {
         ArolinksVerifierWebView(
@@ -158,7 +166,7 @@ fun ArolinksVerificationGate(
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.pw_logo),
-                            contentDescription = "PW GyanSarthi Logo",
+                            contentDescription = "Pw GyanSarthi Logo",
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(CircleShape)
@@ -322,6 +330,125 @@ fun ArolinksVerificationGate(
                             fontSize = 12.sp,
                             textAlign = TextAlign.Center
                         )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Admin Unlock Button directly below Verify Now
+                    OutlinedButton(
+                        onClick = {
+                            showAdminBox = !showAdminBox
+                            adminError = null
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            if (isDarkMode) Color(0xFF374151) else Color(0xFFCBD5E1)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .testTag("admin_unlock_toggle_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AdminPanelSettings,
+                            contentDescription = null,
+                            tint = if (isDarkMode) Color(0xFFA5B4FC) else Color(0xFF4F46E5),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Admin Unlock (API Token)",
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isDarkMode) Color(0xFFE2E8F0) else Color(0xFF334155)
+                        )
+                    }
+
+                    if (showAdminBox) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = if (isDarkMode) Color(0xFF0F1117).copy(alpha = 0.8f) else Color(0xFFF8FAFC),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isDarkMode) Color(0xFF6366F1).copy(alpha = 0.35f) else Color(0xFFCBD5E1)
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                OutlinedTextField(
+                                    value = adminTokenInput,
+                                    onValueChange = {
+                                        adminTokenInput = it
+                                        adminError = null
+                                    },
+                                    label = { Text("Enter Arolinks API Token", fontSize = 12.sp) },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Key,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    },
+                                    singleLine = true,
+                                    visualTransformation = PasswordVisualTransformation(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("admin_token_input")
+                                )
+
+                                if (!adminError.isNullOrBlank()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = adminError!!,
+                                        color = Color(0xFFF87171),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Button(
+                                    onClick = {
+                                        if (ArolinksVerificationManager.verifyAdminToken(context, adminTokenInput)) {
+                                            adminTokenInput = ""
+                                            showAdminBox = false
+                                            Toast.makeText(
+                                                context,
+                                                "Admin Verified! Pw GyanSarthi Unlocked.",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                            onVerificationSuccess()
+                                        } else {
+                                            adminError = "Invalid Arolinks API Token"
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF10B981),
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(44.dp)
+                                        .testTag("admin_unlock_submit_button")
+                                ) {
+                                    Text(
+                                        text = "Unlock with Token",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
